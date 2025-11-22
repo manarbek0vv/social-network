@@ -28,7 +28,7 @@ impl UsersService {
 
 #[derive(Debug, FromRow)]
 struct DbUser {
-    id: i32,
+    id: i64,
     username: String,
     email: String,
     password: String,
@@ -49,23 +49,26 @@ impl Users for UsersService {
             FROM users
             WHERE username = $1
         ").bind(request.username)
-        .fetch_one(&self.db)
+        .fetch_optional(&self.db)
         .await
         .map_err(|e| {
-            match e {
-                sqlx::Error::RowNotFound => Status::not_found("User not found"),
-                _ => {
-                    eprintln!("DB error on get_user: {e}");
-                    Status::internal("database error")
-                }
-            }
+                eprintln!("DB error on get_user: {e}");
+                Status::internal("database error")
         })?;
 
+        let user = match row {
+            None => {
+                println!("User not found.");
+                return Err(Status::not_found("User with this username not found."));
+            },
+            Some(u) => u,
+        };
+
         let response = User {
-                id: row.id as u32,
-                username: row.username,
-                email: row.email,
-                password: row.password,
+                id: user.id as u32,
+                username: user.username,
+                email: user.email,
+                password: user.password,
         };
 
         Ok(Response::new(response))
@@ -95,7 +98,7 @@ impl Users for UsersService {
         })?;
 
         let response = User {
-                id: 1,
+                id: 1 as u32,
                 username: row.username,
                 email: row.email,
                 password: row.password,
@@ -108,7 +111,7 @@ impl Users for UsersService {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    let address = "[::1]:50052".parse()?;
+    let address = "127.0.0.1:50052".parse()?;
     let database_url = env::var("DATABASE_URL")?;
     let svc = UsersService::new(&database_url).await?;
 

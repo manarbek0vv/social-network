@@ -10,7 +10,9 @@ pub mod users {
 }
 
 use users::users_client::UsersClient;
-use users::CreateUserRequest;
+use users::{ GetUserRequest, CreateUserRequest };
+
+use crate::users::User;
 
 #[derive(Debug)]
 pub struct AuthService {
@@ -19,7 +21,7 @@ pub struct AuthService {
 
 impl AuthService {
     pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let users_client = UsersClient::connect("http://[::1]:50052").await?;
+        let users_client = UsersClient::connect("http://127.0.0.1:50052").await?;
         Ok(Self { users_client })
     }
 }
@@ -64,11 +66,26 @@ impl Auth for AuthService {
 
         let request = request.into_inner();
 
+        let mut users_service = self.users_client.clone();
+
+        let response = users_service.get_user(GetUserRequest {
+            username: request.username.clone()
+        }).await;
+
+        let user = match response {
+            Err(_status) => return Err(Status::unauthenticated("User with this credentials not found")),
+            Ok(u) => u.into_inner(),
+        };
+
+        if request.password != user.password {
+            return Err(Status::invalid_argument("Wrong credentials."));
+        }
+
         let response = auth::SignInResponse {
                 user: Some(auth::User {
-                    username: request.username,
-                    email: request.email,
-                    password: request.password,
+                    username: user.username,
+                    email: user.email,
+                    password: user.password,
                 }),
                 access_token: "HFG87HFDG8FDHFD5GFDH8".to_owned(),
         };
@@ -79,7 +96,7 @@ impl Auth for AuthService {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "[::1]:50051".parse()?;
+    let addr = "127.0.0.1:50051".parse()?;
     let svc = AuthService::new().await?;
 
     println!("Auth service listening on {}", addr);
