@@ -76,7 +76,7 @@ async fn sign_up(
 ) -> Result<HttpResponse> {
     let mut client = state.auth_client.clone();
 
-    let request = auth::User {
+    let request = auth::SignUpRequest {
         username: payload.username.clone(),
         email: payload.email.clone(),
         password: payload.password.clone(),
@@ -87,7 +87,7 @@ async fn sign_up(
         .await
         .map_err(|e| {
             eprintln!("gRPC error on sign_up: {e}");
-            actix_web::error::ErrorInternalServerError("Auth Service error")
+            actix_web::error::ErrorInternalServerError("Auth Service error: sign up")
         })?
         .into_inner();
 
@@ -99,6 +99,55 @@ async fn sign_up(
             .map(|u| u.email.clone())
             .unwrap_or_default(),
         access_token: response.access_token,
+    };
+
+    Ok(HttpResponse::Ok().json(http_response))
+}
+
+#[derive(Deserialize)]
+struct SignInJSON {
+    email: String,
+    password: String,
+}
+
+#[derive(Serialize)]
+struct SignInResponse {
+    id: i64,
+    username: String,
+    email: String,
+}
+
+#[post("sign-in")]
+async fn sign_in(
+    state: web::Data<AppState>,
+    data: web::Json<SignInJSON>,
+) -> Result<HttpResponse> {
+    let mut client = state.auth_client.clone();
+
+    let request = auth::SignInRequest {
+        email: data.email.clone(),
+        password: data.password.clone(),
+    };
+
+    let response = client
+        .sign_in(tonic::Request::new(request))
+        .await
+        .map_err(|e| {
+            eprintln!("gRPC error on sign_in: {e}");
+            actix_web::error::ErrorInternalServerError("Auth Service error: sign up")
+        })?
+        .into_inner();
+    
+    let http_response = SignInResponse {
+        id: response.user.as_ref()
+            .map(|u| u.id.clone())
+            .unwrap_or_default(),
+        username: response.user.as_ref()
+            .map(|u| u.username.clone())
+            .unwrap_or_default(),
+        email: response.user.as_ref()
+            .map(|u| u.email.clone())
+            .unwrap_or_default(),
     };
 
     Ok(HttpResponse::Ok().json(http_response))

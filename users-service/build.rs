@@ -1,10 +1,11 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let proto_dir = "../proto".to_owned();
+
     tonic_prost_build::configure().compile_protos(
         &[
-            "proto/auth.proto",
-            "proto/users.proto",
+            format!("{proto_dir}/users.proto"),
         ],
-        &["proto"],
+        &[proto_dir],
     )?;
     Ok(())
 }
