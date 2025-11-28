@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 
     let addr = env::var("AUTH_SERVICE")
-        .unwrap_or_else(|_e| "127.0.0.1:50052".to_string())
+        .unwrap_or_else(|_| "127.0.0.1:50052".to_string())
         .parse()?;
     let svc = AuthService::new().await?;
 

@@ -1,6 +1,7 @@
 use tonic::{Request, Response, Status, transport::Channel};
 
 use crate::auth::{ self, auth_server::Auth };
+use crate::domain::token::{Payload, generate_access_token, generate_refresh_token};
 use crate::users::{CreateUserRequest, GetUserRequest};
 use crate::users::users_client::UsersClient;
 
@@ -61,13 +62,29 @@ impl Auth for AuthService {
             }
         };
 
+        let claims = Payload {
+            sub: created_user.id,
+            username: created_user.username.clone(),
+        };
+
+        let access_token = generate_access_token(claims.clone())
+            .map_err(|_| {
+                println!("Token generation error.");
+                Status::internal("Failed to generate access token")
+            })?;
+        let refresh_token = generate_refresh_token(claims.clone())
+            .map_err(|_| {
+                println!("Token generation error.");
+                Status::internal("Failed to generate refresh token")
+            })?;
+
         let response = auth::SignUpResponse {
                 user: Some(auth::User {
                     id: created_user.id,
                     username: created_user.username,
                     email: created_user.email,
                 }),
-                access_token: "HFG87HFDG8FDHFD5GFDH8".to_owned(),
+                access_token,
         };
 
         Ok(Response::new(response))
@@ -94,13 +111,29 @@ impl Auth for AuthService {
             return Err(Status::unauthenticated("Wrong password."));
         }
 
+        let claims = Payload {
+            sub: user.id,
+            username: user.username.clone(),
+        };
+
+        let access_token = generate_access_token(claims.clone())
+            .map_err(|_| {
+                println!("Token generation error.");
+                Status::internal("Failed to generate access token")
+            })?;
+        let refresh_token = generate_refresh_token(claims.clone())
+            .map_err(|_| {
+                println!("Token generation error.");
+                Status::internal("Failed to generate refresh token")
+            })?;
+
         let response = auth::SignInResponse {
                 user: Some(auth::User {
                     id: user.id,
                     username: user.username,
                     email: user.email,
                 }),
-                access_token: "HFG87HFDG8FDHFD5GFDH8".to_owned(),
+                access_token,
         };
 
         Ok(Response::new(response))

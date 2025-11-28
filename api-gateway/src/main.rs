@@ -43,12 +43,20 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(state.clone()))
             .service(health)
             .service(sign_up)
+            .service(sign_in)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
     .await?;
 
     Ok(())
+}
+
+#[derive(Serialize)]
+struct User {
+    id: i64,
+    username: String,
+    email: String,
 }
 
 #[derive(Deserialize)]
@@ -59,8 +67,7 @@ struct SignUpJson {
 }
 #[derive(Serialize)]
 struct SignUpResponse {
-    username: String,
-    email: String,
+    user: User,
     access_token: String,
 }
 
@@ -92,12 +99,17 @@ async fn sign_up(
         .into_inner();
 
     let http_response = SignUpResponse {
-        username: response.user.as_ref()
-            .map(|u| u.username.clone())
-            .unwrap_or_default(),
-        email: response.user.as_ref()
-            .map(|u| u.email.clone())
-            .unwrap_or_default(),
+        user: User {
+            id: response.user.as_ref()
+                .map(|u| u.id)
+                .unwrap_or_default(),
+            username: response.user.as_ref()
+                .map(|u| u.username.clone())
+                .unwrap_or_default(),
+            email: response.user.as_ref()
+                .map(|u| u.email.clone())
+                .unwrap_or_default(),
+        },
         access_token: response.access_token,
     };
 
@@ -112,9 +124,8 @@ struct SignInJSON {
 
 #[derive(Serialize)]
 struct SignInResponse {
-    id: i64,
-    username: String,
-    email: String,
+    user: User,
+    access_token: String,
 }
 
 #[post("sign-in")]
@@ -139,15 +150,18 @@ async fn sign_in(
         .into_inner();
     
     let http_response = SignInResponse {
-        id: response.user.as_ref()
-            .map(|u| u.id.clone())
-            .unwrap_or_default(),
-        username: response.user.as_ref()
-            .map(|u| u.username.clone())
-            .unwrap_or_default(),
-        email: response.user.as_ref()
-            .map(|u| u.email.clone())
-            .unwrap_or_default(),
+        user: User {
+            id: response.user.as_ref()
+                .map(|u| u.id)
+                .unwrap_or_default(),
+            username: response.user.as_ref()
+                .map(|u| u.username.clone())
+                .unwrap_or_default(),
+            email: response.user.as_ref()
+                .map(|u| u.email.clone())
+                .unwrap_or_default(),
+        },
+        access_token: response.access_token,
     };
 
     Ok(HttpResponse::Ok().json(http_response))
