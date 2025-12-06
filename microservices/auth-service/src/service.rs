@@ -1,12 +1,9 @@
 use tonic::{ Request, Response, Status, transport::Channel};
 
-use crate::error::{map_auth_error_to_status, map_users_status_to_auth_error};
 use crate::proto::auth::{ self, auth_server::Auth };
 use crate::domain::token::{Payload, generate_tokens};
 use crate::proto::users::{CreateUserRequest, GetUserRequest};
 use crate::proto::users::users_client::UsersClient;
-
-
 use crate::domain::password::{hash_password, verify_password};
 use crate::validation::{validate_sign_in, validate_sign_up};
 
@@ -46,9 +43,7 @@ impl Auth for AuthService {
                 email: input.email,
                 password: password_hash,
             }
-        ).await
-        .map_err(map_users_status_to_auth_error)
-        .map_err(map_auth_error_to_status)?
+        ).await?
         .into_inner();
 
         let claims = Payload {
@@ -88,10 +83,7 @@ impl Auth for AuthService {
                 email: input.email,
         }).await;
 
-        let user = response
-            .map_err(map_users_status_to_auth_error)
-            .map_err(map_auth_error_to_status)?
-            .into_inner();
+        let user = response?.into_inner();
 
         verify_password(input.password, user.password)
             .map_err(|_| Status::unauthenticated("Wrong password."))?;

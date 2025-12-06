@@ -18,14 +18,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = config.microservice_url.parse()?;
 
-    let svc = AuthService::new(
+    let service = AuthService::new(
         config.users_service_url
     ).await?;
 
     println!("Auth service listening on {}", addr);
 
     Server::builder()
-        .add_service(AuthServer::new(svc))
+        .add_service(AuthServer::new(service))
         .serve(addr)
         .await?;
 
