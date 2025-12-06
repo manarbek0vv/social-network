@@ -23,22 +23,24 @@ pub enum AuthError {
     UserAlreadyExists,
 
     #[error("user service internal error")]
-    UserServiceInternal
+    UserServiceInternal,
+
+    // #[error("Password hashing error")]
+    // PasswordHashingError,
 }
 
 fn map_users_status_to_auth_error(status: Status) -> AuthError {
     match status.code() {
-        Code::InvalidArgument => AuthError::InvalidCredentials,
+        Code::NotFound => AuthError::InvalidCredentials,
         Code::AlreadyExists => AuthError::UserAlreadyExists,
         _ => AuthError::UserServiceInternal,
-
     }
 }
 
 fn map_auth_error_to_status(error: AuthError) -> Status {
     match error {
-        AuthError::InvalidCredentials => Status::invalid_argument("invalid credentials"),
-        AuthError::UserAlreadyExists => Status::already_exists("User with this this email exists"),
+        AuthError::InvalidCredentials => Status::unauthenticated("invalid credentials"),
+        AuthError::UserAlreadyExists => Status::already_exists("User with this email exists"),
         AuthError::UserServiceInternal => Status::internal("Auth service internal error"),
     }
 }
@@ -125,7 +127,7 @@ impl Auth for AuthService {
             .into_inner();
 
         if let Err(_e) = verify_password(request.password, user.password.clone()) {
-            return Err(Status::invalid_argument("Wrong password."));
+            return Err(Status::unauthenticated("Wrong password."));
         }
 
         let claims = Payload {

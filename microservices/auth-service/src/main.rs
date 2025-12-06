@@ -6,13 +6,11 @@ use crate::service::AuthService;
 
 pub mod service;
 pub mod repository;
-
 pub mod domain;
 
 pub mod auth {
     tonic::include_proto!("auth");
 }
-
 pub mod users {
     tonic::include_proto!("users");
 }
@@ -22,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 
     let addr = env::var("AUTH_SERVICE")
-        .unwrap_or_else(|_| "127.0.0.1:50052".to_string())
+        .unwrap_or_else(|_| "127.0.0.1:50051".to_string())
         .parse()?;
     let svc = AuthService::new().await?;
 
