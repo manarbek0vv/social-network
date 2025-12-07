@@ -4,7 +4,7 @@ use sqlx::postgres::PgPoolOptions;
 use tonic::transport::Server;
 
 use crate::config::Config;
-use crate::proto::posts::posts_server::{ PostsServer };
+use crate::proto::proto::posts::posts_server::{ PostsServer };
 use crate::repository::PostsRepository;
 use crate::service::PostsService;
 
@@ -12,6 +12,10 @@ pub mod config;
 pub mod service;
 pub mod proto;
 pub mod repository;
+pub mod error;
+pub mod model;
+pub mod domain;
+pub mod validation;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,7 +31,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let repository = PostsRepository::new(db);
-
     let service = PostsService::new(repository);
 
     println!("Posts service listening on {}", addr);

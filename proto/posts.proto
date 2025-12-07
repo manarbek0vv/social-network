@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package posts;
 
 service Posts {
@@ -17,7 +19,7 @@ message Post {
     int64 user_id = 2;
     string title = 3;
     string description = 4;
-    int64 created_at = 5;
+    google.protobuf.Timestamp created_at = 5;
 }
 
 // --------------- Messages ---------------
@@ -53,8 +55,9 @@ message CreatePostResponse {
 // ------------------------------
 
 message UpdatePostRequest {
-    string title = 3;
-    string description = 4;
+    int64 id = 1;
+    string title = 2;
+    string description = 3;
 }
 
 message UpdatePostResponse {

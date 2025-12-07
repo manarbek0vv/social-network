@@ -1,5 +1,5 @@
 use tonic::{Request, Response, Status};
-use crate::{proto::posts::{CreatePostRequest, CreatePostResponse, DeletePostRequest, DeletePostResponse, GetPostRequest, GetPostResponse, GetPostsRequest, GetPostsResponse, Post, UpdatePostRequest, UpdatePostResponse, posts_server::Posts}, repository::PostsRepository};
+use crate::{proto::proto::posts::{CreatePostRequest, CreatePostResponse, DeletePostRequest, DeletePostResponse, GetPostRequest, GetPostResponse, GetPostsRequest, GetPostsResponse, UpdatePostRequest, UpdatePostResponse, posts_server::Posts}, repository::PostsRepository};
 
 #[derive(Debug)]
 pub struct PostsService {
@@ -18,16 +18,13 @@ impl Posts for PostsService {
         &self,
         request: Request<GetPostRequest>,
     ) -> Result<Response<GetPostResponse>, Status> {
-        let _request = request.into_inner();
+        let request = &request.into_inner();
+
+        let post = self.repository.get_post(request)
+            .await.map_err(|_| Status::not_found("post with this id not found"))?;
 
         let response = GetPostResponse {
-            post: Some(Post {
-                        id: 1,
-                        title: String::from("Social network"),
-                        description: String::from("Developing an IT startup"),
-                        user_id: 123432,
-                        created_at: 1243254353,
-                })
+            post: Some(post.into())
         };
 
         Ok(Response::new(response))
@@ -37,17 +34,11 @@ impl Posts for PostsService {
         &self,
         _request: Request<GetPostsRequest>,
     ) -> Result<Response<GetPostsResponse>, Status> {
+        let posts = self.repository.get_posts()
+            .await.map_err(|_| Status::internal("Error on getting posts"))?;
 
         let response = GetPostsResponse {
-            posts: vec![
-                Post {
-                    id: 1,
-                    title: String::from("Social network"),
-                    description: String::from("Developing an IT startup"),
-                    user_id: 123432,
-                    created_at: 1243254353,
-                }
-            ]
+            posts: posts.into_iter().map(Into::into).collect()
         };
 
         Ok(Response::new(response))
@@ -55,16 +46,15 @@ impl Posts for PostsService {
 
     async fn create_post(
         &self,
-        _request: Request<CreatePostRequest>,
+        request: Request<CreatePostRequest>,
     ) -> Result<Response<CreatePostResponse>, Status> {
+        let request = &request.into_inner();
+
+        let created_post = self.repository.create_post(request)
+            .await.map_err(|_| Status::internal("Error on creating post"))?;
+
         let response = CreatePostResponse {
-            post: Some(Post {
-                        id: 1,
-                        title: String::from("Social network"),
-                        description: String::from("Developing an IT startup"),
-                        user_id: 123432,
-                        created_at: 1243254353,
-                })
+            post: Some(created_post.into())
         };
 
         Ok(Response::new(response))
@@ -72,16 +62,15 @@ impl Posts for PostsService {
 
     async fn update_post(
         &self,
-        _request: Request<UpdatePostRequest>,
+        request: Request<UpdatePostRequest>,
     ) -> Result<Response<UpdatePostResponse>, Status> {
+        let request = &request.into_inner();
+
+        let updated_post = self.repository.update_post(request)
+            .await.map_err(|_| Status::internal("Error on updating post"))?;
+
         let response = UpdatePostResponse {
-            post: Some(Post {
-                        id: 1,
-                        title: String::from("Social network"),
-                        description: String::from("Developing an IT startup"),
-                        user_id: 123432,
-                        created_at: 1243254353,
-                })
+            post: Some(updated_post.into())
         };
 
         Ok(Response::new(response))
@@ -89,16 +78,15 @@ impl Posts for PostsService {
 
     async fn delete_post(
         &self,
-        _request: Request<DeletePostRequest>,
+        request: Request<DeletePostRequest>,
     ) -> Result<Response<DeletePostResponse>, Status> {
+        let request = &request.into_inner();
+
+        let deleted_post = self.repository.delete_post(request)
+            .await.map_err(|_| Status::internal("Error on deleting post"))?;
+
         let response = DeletePostResponse {
-            post: Some(Post {
-                        id: 1,
-                        title: String::from("Social network"),
-                        description: String::from("Developing an IT startup"),
-                        user_id: 123432,
-                        created_at: 1243254353,
-                })
+            post: Some(deleted_post.into())
         };
 
         Ok(Response::new(response))
